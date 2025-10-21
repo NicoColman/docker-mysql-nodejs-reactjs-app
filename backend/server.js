@@ -93,7 +93,13 @@ app.post("/tbinit", (req, res) => {
   res.json("Table created successfully");
 });
 
-// Start the server
-app.listen(3000, () => {
-  console.log("Server running on port 3000");
-});
+// Exportar app para testing
+module.exports = app;
+
+// Solo iniciar el servidor si NO estamos en modo test
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
