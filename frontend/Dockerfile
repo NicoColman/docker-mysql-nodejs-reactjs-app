@@ -1,23 +1,31 @@
-# Use the official Node.js 20 image as the base image
-FROM node:20
+# Stage 1: Build
+FROM node:18-alpine AS builder
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy the package.json and package-lock.json files to the container
+# Copiar package files
 COPY package*.json ./
 
-# Install the dependencies
-RUN npm install
+# Instalar dependencias
+RUN npm ci
 
-# Copy the rest of the application's source code to the container
+# Copiar código fuente
 COPY . .
 
-# Build the React.js application
+# Build de producción
 RUN npm run build
 
-# Expose the port that the application listens on
-EXPOSE 3001
+# Stage 2: Servir con nginx
+FROM nginx:alpine
 
-# Start a simple web server to serve the built React.js files
-CMD [ "npx", "serve", "-s", "build" ]
+# Copiar build al directorio de nginx
+COPY --from=builder /app/build /usr/share/nginx/html
+
+# Copiar configuración personalizada de nginx (opcional)
+# COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Exponer puerto
+EXPOSE 80
+
+# Nginx se inicia automáticamente
+CMD ["nginx", "-g", "daemon off;"]

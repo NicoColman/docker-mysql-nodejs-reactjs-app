@@ -1,20 +1,32 @@
-# Use the official Node.js 20 image as the base image
-FROM node:20
+# Multi-stage build para optimizar tamaño
+FROM node:18-alpine AS builder
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy the package.json and package-lock.json files to the container
+# Copiar solo package files primero (mejor cache)
 COPY package*.json ./
 
-# Install the dependencies
-RUN npm install
+# Instalar dependencias
+RUN npm ci --only=production
 
-# Copy the rest of the application's source code to the container
+# Copiar el resto del código
 COPY . .
 
-# Expose the port that the application listens on
+# Stage final
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copiar desde builder
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/*.js ./
+COPY --from=builder /app/package*.json ./
+
+# Exponer puerto
 EXPOSE 3000
 
-# Start the Node.js application
-CMD [ "npm", "start" ]
+# Variables de entorno por defecto
+ENV NODE_ENV=production
+
+# Comando de inicio
+CMD ["node", "server.js"]
